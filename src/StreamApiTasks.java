@@ -108,43 +108,75 @@ public class StreamApiTasks {
     }
 
     static double totalRevenue(List<Order> orders) {
-        // TODO: task 5
-        return 0.0;
+        return orders.stream()
+                .filter(order -> order.status() != OrderStatus.CANCELLED)
+                .mapToDouble(Order::totalValue)
+                .sum();
     }
 
     static OptionalDouble averageDeliveredOrderValue(List<Order> orders) {
-        // TODO: task 6
-        return OptionalDouble.empty();
+        return orders.stream()
+                .filter(order -> order.status() == OrderStatus.DELIVERED)
+                .mapToDouble(Order::totalValue)
+                .average();
     }
 
     static Map<OrderStatus, Long> countByStatus(List<Order> orders) {
-        // TODO: task 7
-        return Map.of();
+        return orders.stream()
+                .collect(Collectors.groupingBy(
+                        Order::status,
+                        Collectors.counting()
+                ));
     }
 
     static Map<String, Double> revenueByCategory(List<Order> orders) {
-        // TODO: task 8
-        return Map.of();
+        return orders.stream()
+                .filter(order -> order.status() != OrderStatus.CANCELLED)
+                .flatMap(order -> order.items().stream())
+                .collect(Collectors.groupingBy(
+                        item -> item.product().category(),
+                        Collectors.summingDouble(OrderItem::totalPrice)
+                ));
     }
 
     static Map<String, Double> topCustomers(List<Order> orders, int limit) {
-        // TODO: task 9
-        return Map.of();
+        return orders.stream()
+                .filter(order -> order.status() != OrderStatus.CANCELLED)
+                .collect(Collectors.groupingBy(
+                        Order::customerName,
+                        Collectors.summingDouble(Order::totalValue)
+                ))
+                .entrySet().stream()
+                .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
+                .limit(limit)
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (existing, replacement) -> existing, // Merge function (not strictly needed here, but required by toMap)
+                        LinkedHashMap::new // Preserves the sorted order
+                ));
     }
 
     static Map<Boolean, List<Order>> partitionActiveOrdersByValue(List<Order> orders, double threshold) {
-        // TODO: task 10
-        return Map.of();
+        return orders.stream()
+                .filter(order -> order.status() != OrderStatus.CANCELLED)
+                .collect(Collectors.partitioningBy(
+                        order -> order.totalValue() >= threshold
+                ));
     }
 
     static Optional<Order> mostExpensiveDeliveredOrder(List<Order> orders) {
-        // TODO: task 11
-        return Optional.empty();
+        return orders.stream()
+                .filter(order -> order.status() == OrderStatus.DELIVERED)
+                .max(Comparator.comparingDouble(Order::totalValue));
     }
 
     static DoubleSummaryStatistics activeOrderStatistics(List<Order> orders) {
         // TODO: extra task
-        return new DoubleSummaryStatistics();
+        return orders.stream()
+                .filter(order -> order.status() != OrderStatus.CANCELLED)
+                .mapToDouble(Order::totalValue)
+                .summaryStatistics();
     }
 
     public static void main(String[] args) {
